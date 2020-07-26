@@ -15,7 +15,7 @@ commands:
   install_build_cache:
     steps:
       - restore_cache:
-          key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
+          key: v1-repo-{{ checksum "backend/package.json" }}-{{checksum "frontend/package.json"}}
       - run:
           name: Install
           command: |
@@ -24,30 +24,6 @@ commands:
           name: Build
           command: |
             npm run build
-  backend_save_restore_cache:
-    steps:
-      - restore_cache:
-          keys:
-            # when lock file changes, use increasingly general patterns to restore cache
-            - node-v1-{{ .Branch }}-{{ checksum "package-lock.json" }}
-            - node-v1-{{ .Branch }}-
-            - node-v1-
-      - save_cache:
-          paths:
-            - ~/project/backend/node_modules # location depends on npm version
-          key: node-v1-{{ .Branch }}-{{ checksum "package-lock.json" }}
-  frontend_save_restore_cache:
-    steps:
-      - restore_cache:
-          keys:
-            # when lock file changes, use increasingly general patterns to restore cache
-            - node-v1-{{ .Branch }}-{{ checksum "package-lock.json" }}
-            - node-v1-{{ .Branch }}-
-            - node-v1-
-      - save_cache:
-          paths:
-            - ~/project/frontend/node_modules # location depends on npm version
-          key: node-v1-{{ .Branch }}-{{ checksum "package-lock.json" }}
 
 jobs:
   checkout_code:
@@ -56,8 +32,16 @@ jobs:
     working_directory: ~/project
     steps:
       - checkout
+      - restore_cache:
+          key: v1-repo-{{ checksum "backend/package.json" }}-{{checksum "frontend/package.json"}}
+      - run:
+          name: Install dependencies
+          command: |
+            cd ~/project/backend && npm ci
+            cd ~/project/frontend && npm ci
+
       - save_cache:
-          key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
+          key: v1-repo-{{ checksum "backend/package.json" }}-{{checksum "frontend/package.json"}}
           paths:
             - ~/project
 
@@ -68,15 +52,12 @@ jobs:
     steps:
       - install_build_cache
 
-      - frontend_save_restore_cache
-
   backend-build:
     docker:
       - image: circleci/node:13.8.0
     working_directory: ~/project/backend
     steps:
       - install_build_cache
-      - backend_save_restore_cache
 
   backend-test:
     docker:
@@ -84,9 +65,9 @@ jobs:
     working_directory: ~/project/backend
     steps:
       - restore_cache:
-          key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
-            - backend_save_restore_cache
-      - backend_save_restore_cache
+          key: v1-repo-{{ checksum "backend/package.json" }}-{{checksum "frontend/package.json"}}
+
+      #    - backend_save_restore_cache
 
       - run:
           name: Run tests with JUnit as reporter
@@ -104,8 +85,9 @@ jobs:
     working_directory: ~/project/frontend
     steps:
       - restore_cache:
-          key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
-      - frontend_save_restore_cache
+          key: v1-repo-{{ checksum "backend/package.json" }}-{{checksum "frontend/package.json"}}
+
+      #- frontend_save_restore_cache
 
       - run:
           name: Run tests with JUnit as reporter
