@@ -17,6 +17,14 @@ commands:
           key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
           paths:
             - ~/project/
+  analyze:
+    steps:
+      - restore_cache:
+          key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
+      - run:
+          name: Analyze
+          command: |
+            npm audit --audit-level=critical
 
 jobs:
   checkout_code:
@@ -56,10 +64,6 @@ jobs:
       - restore_cache:
           key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
       - run:
-          name: Create junit folder
-          command: |
-            mkdir -p reports/junit
-      - run:
           name: Run tests with JUnit as reporter
           command: npm run test
           environment:
@@ -68,6 +72,13 @@ jobs:
           path: ./reports/junit/
       - store_artifacts:
           path: ./reports/junit
+
+  frontend-analyze:
+    docker:
+      - image: circleci/node:13.8.0
+    working_directory: ~/project/frontend
+    steps:
+      - analyze
 
   backend-build:
     docker:
@@ -84,10 +95,6 @@ jobs:
       - restore_cache:
           key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
       - run:
-          name: Create junit folder
-          command: |
-            mkdir -p reports/junit
-      - run:
           name: Run tests with JUnit as reporter
           command: npm run test
           environment:
@@ -96,6 +103,12 @@ jobs:
           path: ./reports/junit/
       - store_artifacts:
           path: ./reports/junit
+  backend-analyze:
+    docker:
+      - image: circleci/node:13.8.0
+    working_directory: ~/project/backend
+    steps:
+      - analyze
 
 workflows:
   frontend:
@@ -107,6 +120,9 @@ workflows:
       - frontend-test:
           requires:
             - frontend-build
+      - frontend-analyze:
+          requires:
+            - frontend-test
 
   backend:
     jobs:
@@ -118,3 +134,6 @@ workflows:
       - backend-test:
           requires:
             - backend-build
+      - backend-analyze:
+          requires:
+            - backend-test
