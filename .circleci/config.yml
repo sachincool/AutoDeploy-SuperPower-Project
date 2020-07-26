@@ -1,17 +1,109 @@
 version: 2.1
 
+commands:
+  install_build_cache:
+    steps:
+      - restore_cache:
+          key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
+      - run:
+          name: Install
+          command: |
+            npm install
+      - run:
+          name: Build
+          command: |
+            npm run build
+
 jobs:
-  hello-world:
+  checkout_code:
     docker:
-      - image: amazon/aws-cli
+      - image: circleci/node:13.8.0
+    working_directory: ~/project
     steps:
       - checkout
+      - save_cache:
+          key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
+          paths:
+            - ~/project
+
+  frontend-build:
+    docker:
+      - image: circleci/node:13.8.0
+    working_directory: ~/project/frontend
+    steps:
+      - install_build_cache
+
+      - save_cache:
+          key: frontend-cache
+          paths:
+            - node_modules
+
+  backend-build:
+    docker:
+      - image: circleci/node:13.8.0
+    working_directory: ~/project/backend
+    steps:
+      - install_build_cache
+
+      - save_cache:
+          key: backend-cache
+          paths:
+            - node_modules
+
+  backend-test:
+    docker:
+      - image: circleci/node:13.8.0
+    working_directory: ~/project/backend
+    steps:
+      - restore_cache:
+          key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
+
       - run:
-          name: Say Hello
-          command: |
-            echo "Hello World"
+          name: Run tests with JUnit as reporter
+          command: npm run test
+          environment:
+            JEST_JUNIT_OUTPUT_DIR: ./reports/junit/
+      - store_test_results:
+          path: ./reports/junit/
+      - store_artifacts:
+          path: ./reports/junit
+
+  frontend-test:
+    docker:
+      - image: circleci/node:13.8.0
+    working_directory: ~/project/frontend
+    steps:
+      - restore_cache:
+          key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
+
+      - run:
+          name: Run tests with JUnit as reporter
+          command: npm run test
+          environment:
+            JEST_JUNIT_OUTPUT_DIR: ./reports/junit/
+      - store_test_results:
+          path: ./reports/junit/
+      - store_artifacts:
+          path: ./reports/junit
 
 workflows:
-  default:
+  frontend:
     jobs:
-      - hello-world
+      - checkout_code
+      - frontend-build:
+          requires:
+            - checkout_code
+      - frontend-test:
+          requires:
+            - frontend-build
+
+  backend:
+    jobs:
+      - checkout_code
+      - backend-build:
+          requires:
+            - checkout_code
+
+      - backend-test:
+          requires:
+            - backend-build
