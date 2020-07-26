@@ -13,6 +13,30 @@ commands:
           name: Build
           command: |
             npm run build
+  backend_save_restore_cache:
+    steps:
+      - restore_cache:
+          keys:
+            # when lock file changes, use increasingly general patterns to restore cache
+            - node-v1-{{ .Branch }}-{{ checksum "package-lock.json" }}
+            - node-v1-{{ .Branch }}-
+            - node-v1-
+      - save_cache:
+          paths:
+            - ~/project/backend/node_modules # location depends on npm version
+          key: node-v1-{{ .Branch }}-{{ checksum "package-lock.json" }}
+  frontend_save_restore_cache:
+    steps:
+      - restore_cache:
+          keys:
+            # when lock file changes, use increasingly general patterns to restore cache
+            - node-v1-{{ .Branch }}-{{ checksum "package-lock.json" }}
+            - node-v1-{{ .Branch }}-
+            - node-v1-
+      - save_cache:
+          paths:
+            - ~/project/frontend/node_modules # location depends on npm version
+          key: node-v1-{{ .Branch }}-{{ checksum "package-lock.json" }}
 
 jobs:
   checkout_code:
@@ -33,10 +57,7 @@ jobs:
     steps:
       - install_build_cache
 
-      - save_cache:
-          key: frontend-cache
-          paths:
-            - node_modules
+      - frontend_save_restore_cache
 
   backend-build:
     docker:
@@ -44,11 +65,7 @@ jobs:
     working_directory: ~/project/backend
     steps:
       - install_build_cache
-
-      - save_cache:
-          key: backend-cache
-          paths:
-            - node_modules
+      - backend_save_restore_cache
 
   backend-test:
     docker:
@@ -57,6 +74,8 @@ jobs:
     steps:
       - restore_cache:
           key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
+            - backend_save_restore_cache
+      - backend_save_restore_cache
 
       - run:
           name: Run tests with JUnit as reporter
@@ -75,6 +94,7 @@ jobs:
     steps:
       - restore_cache:
           key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
+      - frontend_save_restore_cache
 
       - run:
           name: Run tests with JUnit as reporter
