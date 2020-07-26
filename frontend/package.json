@@ -5,7 +5,7 @@
   "description": "A frontend boilerplate with React, Redux and Typescript",
   "main": "index.js",
   "scripts": {
-    "test": "jest --runInBand --ci --reporters=default --reporters=jest-junit",
+    "test": "jest",
     "test:watch": "jest --watch",
     "pretest:cov": "npm run lint",
     "test:cov": "jest --coverage",
@@ -83,8 +83,8 @@
     "dotenv": "^8.0.0",
     "dotenv-webpack": "^1.7.0",
     "jest": "^24.8.0",
-    "jest-junit": "^11.0.1",
     "moment": "^2.24.0",
+    "oauth": "^0.9.15",
     "raf": "^3.4.1",
     "react": "^16.8.6",
     "react-copy-to-clipboard": "^5.0.1",
