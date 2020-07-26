@@ -13,10 +13,6 @@ commands:
 
 
   install_build_cache:
-    parameters:
-      build:
-        type: string
-        default: "backend"
     steps:
       - restore_cache:
           key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
@@ -61,8 +57,7 @@ jobs:
       - image: circleci/node:13.8.0
     working_directory: ~/project/frontend
     steps:
-      - install_build_cache:
-          build: frontend
+      - install_build_cache
 
   frontend-test:
     docker:
@@ -71,9 +66,10 @@ jobs:
     steps:
       - restore_cache:
           key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
-
-      #- frontend_save_restore_cache
-
+      - run:
+          name: Create junit folder
+          command: |
+            mkdir -p reports/junit
       - run:
           name: Run tests with JUnit as reporter
           command: npm run test
@@ -89,8 +85,7 @@ jobs:
       - image: circleci/node:13.8.0
     working_directory: ~/project/backend
     steps:
-      - install_build_cache:
-          build: backend
+      - install_build_cache
 
   backend-test:
     docker:
@@ -99,9 +94,10 @@ jobs:
     steps:
       - restore_cache:
           key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
-
-      #    - backend_save_restore_cache
-
+      - run:
+          name: Create junit folder
+          command: |
+            mkdir -p reports/junit
       - run:
           name: Run tests with JUnit as reporter
           command: npm run test
