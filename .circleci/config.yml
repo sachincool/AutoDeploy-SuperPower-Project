@@ -2,9 +2,13 @@ version: 2.1
 
 commands:
   install_build_cache:
+    parameters:
+      build:
+        type: string
+        default: "backend"
     steps:
       - restore_cache:
-          key: v1-repo-{{ checksum "backend/package.json" }}-{{checksum "frontend/package.json"}}
+          key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
       - run:
           name: Install
           command: |
@@ -13,6 +17,10 @@ commands:
           name: Build
           command: |
             npm run build
+      - save_cache:
+          key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
+          paths:
+            - ~/project/
 
 jobs:
   checkout_code:
@@ -22,15 +30,18 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: v1-repo-{{ checksum "backend/package.json" }}-{{checksum "frontend/package.json"}}
+          key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
       - run:
-          name: Install dependencies
+          name: Install Frontend dependencies
           command: |
-            cd ~/project/backend && npm ci
-            cd ~/project/frontend && npm ci
+            cd ~/project/frontend && npm i
+      - run:
+          name: Install Backend dependencies
+          command: |
+            cd ~/project/backend && npm i
 
       - save_cache:
-          key: v1-repo-{{ checksum "backend/package.json" }}-{{checksum "frontend/package.json"}}
+          key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
           paths:
             - ~/project
 
@@ -39,24 +50,18 @@ jobs:
       - image: circleci/node:13.8.0
     working_directory: ~/project/frontend
     steps:
-      - install_build_cache
+      - install_build_cache:
+          build: frontend
 
-  backend-build:
+  frontend-test:
     docker:
       - image: circleci/node:13.8.0
-    working_directory: ~/project/backend
-    steps:
-      - install_build_cache
-
-  backend-test:
-    docker:
-      - image: circleci/node:13.8.0
-    working_directory: ~/project/backend
+    working_directory: ~/project/frontend
     steps:
       - restore_cache:
-          key: v1-repo-{{ checksum "backend/package.json" }}-{{checksum "frontend/package.json"}}
+          key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
 
-      #    - backend_save_restore_cache
+      #- frontend_save_restore_cache
 
       - run:
           name: Run tests with JUnit as reporter
@@ -68,15 +73,23 @@ jobs:
       - store_artifacts:
           path: ./reports/junit
 
-  frontend-test:
+  backend-build:
     docker:
       - image: circleci/node:13.8.0
-    working_directory: ~/project/frontend
+    working_directory: ~/project/backend
+    steps:
+      - install_build_cache:
+          build: backend
+
+  backend-test:
+    docker:
+      - image: circleci/node:13.8.0
+    working_directory: ~/project/backend
     steps:
       - restore_cache:
-          key: v1-repo-{{ checksum "backend/package.json" }}-{{checksum "frontend/package.json"}}
+          key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
 
-      #- frontend_save_restore_cache
+      #    - backend_save_restore_cache
 
       - run:
           name: Run tests with JUnit as reporter
