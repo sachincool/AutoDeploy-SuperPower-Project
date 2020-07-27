@@ -14,7 +14,7 @@
     "start:prod": "node dist/main.js",
     "start:hmr": "node dist/server",
     "lint": "tslint -p tsconfig.json -c tslint.json --fix",
-    "test": "jest --runInBand --ci --reporters=default --reporters=jest-junit",
+    "test": "jest --runInBand- -ci --reporters=default --reporters=jest-junit",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:e2e": "jest --config ./test/jest-e2e.json",
