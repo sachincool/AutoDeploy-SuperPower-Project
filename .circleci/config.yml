@@ -1,5 +1,8 @@
 version: 2.1
 
+default_image: &docker_image
+  docker:
+    - image: circleci/node:13.8.0
 commands:
   install_build_cache:
     steps:
@@ -28,8 +31,7 @@ commands:
 
 jobs:
   checkout_code:
-    docker:
-      - image: circleci/node:13.8.0
+    <<: *docker_image
     working_directory: ~/project
     steps:
       - checkout
@@ -50,15 +52,13 @@ jobs:
             - ~/project
 
   frontend-build:
-    docker:
-      - image: circleci/node:13.8.0
+    <<: *docker_image
     working_directory: ~/project/frontend
     steps:
       - install_build_cache
 
   frontend-test:
-    docker:
-      - image: circleci/node:13.8.0
+    <<: *docker_image
     working_directory: ~/project/frontend
     steps:
       - restore_cache:
@@ -74,22 +74,19 @@ jobs:
           path: ./reports/junit
 
   frontend-analyze:
-    docker:
-      - image: circleci/node:13.8.0
+    <<: *docker_image
     working_directory: ~/project/frontend
     steps:
       - analyze
 
   backend-build:
-    docker:
-      - image: circleci/node:13.8.0
+    <<: *docker_image
     working_directory: ~/project/backend
     steps:
       - install_build_cache
 
   backend-test:
-    docker:
-      - image: circleci/node:13.8.0
+    <<: *docker_image
     working_directory: ~/project/backend
     steps:
       - restore_cache:
@@ -104,8 +101,7 @@ jobs:
       - store_artifacts:
           path: ./reports/junit
   backend-analyze:
-    docker:
-      - image: circleci/node:13.8.0
+    <<: *docker_image
     working_directory: ~/project/backend
     steps:
       - analyze
