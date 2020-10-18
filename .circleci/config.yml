@@ -1,8 +1,10 @@
 version: 2.1
 
+# Anchor commands
 default_image: &docker_image
   docker:
     - image: circleci/node:13.8.0
+
 commands:
   destroy-environment:
     description: Destroy backend and frontend cloudformation stacks given a workflow ID.
@@ -115,6 +117,8 @@ jobs:
     working_directory: ~/project/backend
     steps:
       - analyze
+
+
   create-infrastructure:
     docker:
       - image: amazon/aws-cli
@@ -124,13 +128,14 @@ jobs:
       - run:
           name: Create Backend Infrastructure
           command: |
-            aws cloudformation deploy \
-              --stack-name uda \
+            aws cloudformation backend-deploy \
+              --stack-name backend \
               --template-file .circleci/files/backend.yml \
-              --region us-west-2 \
-              --parameter-overrides "ID=1"
-            PUBLIC_DNS=$(aws ec2 describe-instances --region us-west-2 --query "Reservations[*].Instances[0].PublicDnsName"  --output text)
-            curl -H "Content-Type: text/plain" -H "token: bb9fa411-596b-45ef-ab32-8111e6af5491" --request PUT --data "$PUBLIC_DNS" https://api.memstash.io/values/public_dns
+              --region ap-south-1 \
+              --parameter-overrides "ID=${CIRCLE_WORKFLOW_ID:0:7}" \
+              --tags project=udapeople
+            PUBLIC_IP=$(aws ec2 describe-instances --region ap-south-1 --query "Reservations[*].Instances[0].PublicDnsName"  --output text)
+            curl -H "Content-Type: text/plain" -H "token: $MEMSTASH_TOKEN" --request PUT --data "$PUBLIC_DNS" https://api.memstash.io/values/public_ip
 
 #  build-frontend:
 
@@ -138,7 +143,7 @@ jobs:
 
 #  test-frontend:
 
-#  est-backend:
+#  test-backend:
 
 #  can-frontend:
 
