@@ -5,15 +5,15 @@ default_image: &docker_image
   docker:
     - image: circleci/node:13.8.0
 
-commands:
-  destroy-environment:
-    description: Destroy backend and frontend cloudformation stacks given a workflow ID.
-    steps:
+# commands:
+#   destroy-environment:
+#     description: Destroy backend and frontend cloudformation stacks given a workflow ID.
+#     steps:
 
 
-  revert-migration:
-    description: Revert the last migration if successfully run in the current workflow.
-    steps:
+#   revert-migration:
+#     description: Revert the last migration if successfully run in the current workflow.
+#     steps:
 
 
   install_build_cache:
